@@ -1,0 +1,153 @@
+openapi: 3.1.0
+info:
+  title: Local Automation Gateway
+  version: 1.0.0
+
+servers:
+  - url: https://compatible-look-mills-sms.trycloudflare.com
+
+paths:
+  /health:
+    get:
+      operationId: health
+      summary: Health check
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /youtube/jobs:
+    post:
+      operationId: createYouTubeJob
+      summary: Create an async job to process a YouTube URL
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/YouTubeJobCreateReq"
+      responses:
+        "200":
+          description: Job created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/YouTubeJobCreateResp"
+
+  /youtube/jobs/{job_id}:
+    get:
+      operationId: getYouTubeJob
+      summary: Get job status by ID
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/YouTubeJobResp"
+        "404":
+          description: Job not found
+
+  /youtube/jobs/{job_id}/result:
+    get:
+      operationId: getYouTubeJobResult
+      summary: Get job result by ID
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Job result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/YouTubeJobResultResp"
+        "404":
+          description: Job not found
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+      required: [ok]
+
+    YouTubeJobCreateReq:
+      type: object
+      properties:
+        youtube_url:
+          type: string
+          description: YouTube video URL
+      required: [youtube_url]
+
+    YouTubeJobCreateResp:
+      type: object
+      properties:
+        job_id:
+          type: string
+        status:
+          type: string
+          enum: [queued, running, done, failed]
+      required: [job_id, status]
+
+    YouTubeJobResp:
+      type: object
+      properties:
+        job_id:
+          type: string
+        status:
+          type: string
+          enum: [queued, running, done, failed]
+        created_at:
+          type: number
+          description: Unix timestamp seconds
+        updated_at:
+          type: number
+          description: Unix timestamp seconds
+        error:
+          type: string
+          nullable: true
+      required: [job_id, status, created_at, updated_at]
+
+    YouTubeJobResultResp:
+      type: object
+      properties:
+        job_id:
+          type: string
+        status:
+          type: string
+          enum: [queued, running, done, failed]
+        result:
+          type: object
+          nullable: true
+          additionalProperties: true
+        error:
+          type: string
+          nullable: true
+      required: [job_id, status]
